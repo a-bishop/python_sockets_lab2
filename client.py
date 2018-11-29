@@ -56,16 +56,26 @@ for i in range(4, arg_len, 2):
     numbyte = num1 | num2
     packet.append(numbyte)
     
-# 3. send the packet. 
-#s.sendto(packet, (host, port))
-# Note, you can also do:
+# 3. send the packet.
 s.connect( (host, port) )
 s.send(packet)
 
 # 4. receive the response
 data = s.recv(4)
 
+data1 = data[0] << 24
+data2 = data[1] << 16
+data3 = data[2] << 8
+data4 = data[3]
+total = data1 + data2 + data3 + data4
+
+#account for negative values
+if 0b10000000 & data[0] > 0:
+  total = total - 2**32
+
+print(total)
+
 # 5. unpack the byte array to a meaningful value.
-print(int.from_bytes(data, byteorder="big", signed=True))
+# print(int.from_bytes(data, byteorder="big", signed=True))
 
 s.close()

@@ -21,7 +21,7 @@ while True:
 
     # wait for a client to send a packet
     packet, addr = s.recvfrom(1024)
-    
+
     # unpack the data.
     operator = packet[0]
     if operator & 1 != 0:
@@ -32,11 +32,17 @@ while True:
         operator = '*'
 
     count = int(packet[1])
-    result = 'start'
+
+    start = True
+    neg = False
 
     for nums in packet[2:]:
+        # print(nums)
+        # print(count)
+        # print(len(packet))
         mask = 8
         two = 0
+        last = (len(packet) - 1)
         one = nums >> 4
         if nums & mask != 0:
             two = 8
@@ -48,25 +54,56 @@ while True:
             two = two + 1
         # Calculate the result.
         if operator == '+':
-            if result == 'start':
+            if start == True:
                 result = one + two
+                start = False;
+            elif (nums == packet[last]):
+                if (count % 2 == 1):
+                    result = result + one
+                else:
+                    result = one + two + result
             else:    
                 result = one + two + result
         elif operator == '-':
-            if result == 'start':
+            if start == True:
                 result = one - two
+                start = False;
+            elif (nums == packet[last]):
+                if (count % 2 == 1):
+                    result = result - one
+                else:
+                    result = result - one - two
             else:
                 result = result - one - two
         elif operator == '*':
-            if result == 'start':
+            if start == True:
                 result = one * two
-            elif (two == 0) & (count % 2 == 1):
-                result = result * one
+                start = False;
+            elif (nums == packet[last]):
+                if (count % 2 == 1):
+                    result = result * one
+                else:
+                    result = result * one * two
             else: 
                 result = result * one * two
+
+    return_packet = bytearray()
+    #print(result);
+
+    byte1 = (result >> 24 & 0xFF)
+    return_packet.append(byte1)
+    
+    byte2 = (result >> 16 & 0xFF)
+    return_packet.append(byte2)
+    
+    byte3 = (result >> 8 & 0xFF)
+    return_packet.append(byte3)
+    
+    byte4 = (result & 0xFF)
+    return_packet.append(byte4)
     
     # Pack the result into a byte array.
-    return_packet = result.to_bytes(4, byteorder="big", signed=True)
+    #return_packet = result.to_bytes(4, byteorder="big", signed=True)
 
     # # Send the packet back to the client.
     s.sendto(return_packet, addr)
